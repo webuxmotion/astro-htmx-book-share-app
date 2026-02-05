@@ -63,5 +63,8 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
   db.data.books.splice(bookIndex, 1);
   await db.write();
 
-  return new Response('', { status: 200 });
+  return new Response(null, {
+    status: 200,
+    headers: { 'HX-Redirect': '/books/my' },
+  });
 };
