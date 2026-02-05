@@ -29,6 +29,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
     description,
     isAvailable,
     bookedByUserId: null,
+    bookingStatus: null,
+    bookingConfirmed: false,
+    bookingMovedByUserId: null,
+    bookingPreviousStatus: null,
+    bookingStatusUpdatedAt: null,
     createdAt: new Date().toISOString(),
   };
 

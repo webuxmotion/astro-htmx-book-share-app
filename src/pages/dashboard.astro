@@ -1,0 +1,110 @@
+---
+import Layout from '../layouts/Layout.astro';
+import KanbanBoard from '../modules/kanban/KanbanBoard.astro';
+import { getDb } from '../lib/db';
+import { getUserRole } from '../modules/kanban/booking-rules';
+import type { Role } from '../modules/kanban/booking-rules';
+
+const user = Astro.locals.user;
+if (!user) {
+  return Astro.redirect('/login');
+}
+
+const db = await getDb();
+const users = db.data.users;
+
+// Get all books where user is owner or reader with an active booking status
+const activeBooks = db.data.books.filter(b =>
+  b.bookingStatus && b.bookedByUserId && (b.userId === user.id || b.bookedByUserId === user.id)
+);
+
+const booksWithUsers = activeBooks.map(book => {
+  const owner = users.find(u => u.id === book.userId);
+  const reader = users.find(u => u.id === book.bookedByUserId);
+  const role = getUserRole(user.id, book.userId, book.bookedByUserId) as Role;
+
+  return {
+    book,
+    ownerName: owner?.username ?? 'Unknown',
+    readerName: reader?.username ?? 'Unknown',
+    role,
+  };
+});
+---
+<Layout title="Dashboard">
+  <div class="dashboard-header">
+    <h1>Booking Dashboard</h1>
+    <p class="dashboard-subtitle">Track and manage your book exchanges</p>
+  </div>
+
+  {booksWithUsers.length > 0 ? (
+    <div class="kanban-wrapper">
+      <KanbanBoard books={booksWithUsers} currentUserId={user.id} />
+    </div>
+  ) : (
+    <div class="empty-state">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+      </svg>
+      <p>No active bookings yet.</p>
+      <p>Book a book from the <a href="/">library</a> to get started.</p>
+    </div>
+  )}
+
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js" is:inline></script>
+  <script is:inline>
+    window._isDragging = false;
+
+    document.addEventListener('DOMContentLoaded', function() {
+      initSortable();
+    });
+
+    document.body.addEventListener('htmx:afterSettle', function() {
+      if (!window._isDragging) {
+        initSortable();
+      }
+    });
+
+    // Cancel polling requests while dragging to prevent DOM replacement mid-drag
+    document.body.addEventListener('htmx:beforeRequest', function(evt) {
+      if (window._isDragging && evt.detail.elt.id === 'kanban-board') {
+        evt.preventDefault();
+      }
+    });
+
+    function initSortable() {
+      if (typeof Sortable === 'undefined') return;
+
+      var columns = document.querySelectorAll('.kanban-column-body');
+
+      columns.forEach(function(col) {
+        if (col._sortable) col._sortable.destroy();
+
+        col._sortable = new Sortable(col, {
+          group: 'kanban',
+          animation: 150,
+          ghostClass: 'kanban-card-ghost',
+          dragClass: 'kanban-card-dragging',
+          onStart: function() {
+            window._isDragging = true;
+          },
+          onEnd: function(evt) {
+            window._isDragging = false;
+
+            var cardEl = evt.item;
+            var bookId = cardEl.dataset.bookId;
+            var fromStatus = evt.from.dataset.status;
+            var toStatus = evt.to.dataset.status;
+
+            if (fromStatus === toStatus) return;
+
+            htmx.ajax('POST', '/api/books/' + bookId + '/status', {
+              values: { action: 'move', status: toStatus },
+              swap: 'none'
+            });
+          }
+        });
+      });
+    }
+  </script>
+</Layout>

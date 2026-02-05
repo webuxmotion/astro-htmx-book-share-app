@@ -1,0 +1,75 @@
+---
+import type { BookingStatus } from '../../lib/db';
+import type { Role } from './booking-rules';
+
+interface Props {
+  book: {
+    id: string;
+    title: string;
+    author: string;
+    userId: string;
+    bookedByUserId: string | null;
+    bookingStatus: BookingStatus;
+    bookingConfirmed: boolean;
+    bookingMovedByUserId: string | null;
+  };
+  ownerName: string;
+  readerName: string;
+  role: Role;
+  currentUserId: string;
+}
+
+const { book, ownerName, readerName, role, currentUserId } = Astro.props;
+
+const colors = ['#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#EF4444', '#6366F1', '#14B8A6'];
+const hash = book.title.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+const coverColor = colors[hash % colors.length];
+const initials = book.title.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+
+const isPending = !book.bookingConfirmed;
+const iMovedIt = book.bookingMovedByUserId === currentUserId;
+const canUserConfirm = isPending && !iMovedIt;
+---
+<div class={`kanban-card ${isPending ? 'pending' : ''}`} data-book-id={book.id} data-status={book.bookingStatus}>
+  <div class="kanban-card-cover" style={`background: ${coverColor}`}>
+    <span class="kanban-card-initials">{initials}</span>
+  </div>
+  <div class="kanban-card-body">
+    <a href={`/books/${book.id}`} class="kanban-card-title">{book.title}</a>
+    <p class="kanban-card-author">{book.author}</p>
+    <div class="kanban-card-parties">
+      {role === 'reader' ? (
+        <span class="kanban-card-party">Owner: <strong>{ownerName}</strong></span>
+      ) : (
+        <span class="kanban-card-party">Reader: <strong>{readerName}</strong></span>
+      )}
+    </div>
+
+    {isPending && (
+      <div class="kanban-card-pending">
+        {canUserConfirm ? (
+          <div class="kanban-card-actions">
+            <button
+              class="btn btn-sm btn-primary"
+              hx-post={`/api/books/${book.id}/status`}
+              hx-vals='{"action":"confirm"}'
+              hx-swap="none"
+            >
+              Accept
+            </button>
+            <button
+              class="btn btn-sm btn-danger"
+              hx-post={`/api/books/${book.id}/status`}
+              hx-vals='{"action":"decline"}'
+              hx-swap="none"
+            >
+              Decline
+            </button>
+          </div>
+        ) : (
+          <span class="kanban-card-waiting">Waiting for confirmation...</span>
+        )}
+      </div>
+    )}
+  </div>
+</div>

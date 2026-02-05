@@ -34,6 +34,7 @@ const initial = user?.username?.charAt(0).toUpperCase() ?? '';
           </span>
         </a>
       )}
+      {user && <a href="/dashboard">Dashboard</a>}
       {user && <a href="/books/add">Add Book</a>}
     </nav>
 

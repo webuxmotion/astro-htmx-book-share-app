@@ -1,0 +1,32 @@
+---
+import KanbanBoard from '../../modules/kanban/KanbanBoard.astro';
+import { getDb } from '../../lib/db';
+import { getUserRole } from '../../modules/kanban/booking-rules';
+import type { Role } from '../../modules/kanban/booking-rules';
+
+const user = Astro.locals.user;
+if (!user) {
+  return new Response('', { status: 401 });
+}
+
+const db = await getDb();
+const users = db.data.users;
+
+const activeBooks = db.data.books.filter(b =>
+  b.bookingStatus && b.bookedByUserId && (b.userId === user.id || b.bookedByUserId === user.id)
+);
+
+const booksWithUsers = activeBooks.map(book => {
+  const owner = users.find(u => u.id === book.userId);
+  const reader = users.find(u => u.id === book.bookedByUserId);
+  const role = getUserRole(user.id, book.userId, book.bookedByUserId) as Role;
+
+  return {
+    book,
+    ownerName: owner?.username ?? 'Unknown',
+    readerName: reader?.username ?? 'Unknown',
+    role,
+  };
+});
+---
+<KanbanBoard books={booksWithUsers} currentUserId={user.id} />

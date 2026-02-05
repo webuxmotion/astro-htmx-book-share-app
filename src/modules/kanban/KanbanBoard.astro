@@ -1,0 +1,63 @@
+---
+import type { Book, BookingStatus } from '../../lib/db';
+import type { Role } from './booking-rules';
+import { STATUSES, STATUS_LABELS } from './booking-rules';
+import KanbanCard from './KanbanCard.astro';
+
+interface BookWithUsers {
+  book: Book;
+  ownerName: string;
+  readerName: string;
+  role: Role;
+}
+
+interface Props {
+  books: BookWithUsers[];
+  currentUserId: string;
+}
+
+const { books, currentUserId } = Astro.props;
+
+// Group books by their booking status
+const columns: Record<BookingStatus, BookWithUsers[]> = {
+  booked: [],
+  in_delivery: [],
+  delivered: [],
+  on_the_bookshelf: [],
+  reading: [],
+  return_delivery: [],
+  at_owner_home: [],
+};
+
+for (const item of books) {
+  if (item.book.bookingStatus) {
+    columns[item.book.bookingStatus].push(item);
+  }
+}
+---
+<div class="kanban-board" id="kanban-board" hx-get="/partials/dashboard-board" hx-trigger="every 1s, boardChanged from:body" hx-swap="outerHTML">
+  {STATUSES.map((status) => (
+    <div class="kanban-column" data-status={status}>
+      <div class="kanban-column-header">
+        <span>{STATUS_LABELS[status]}</span>
+        {columns[status].length > 0 && (
+          <span class="kanban-column-count">{columns[status].length}</span>
+        )}
+      </div>
+      <div class="kanban-column-body" data-status={status}>
+        {columns[status].map((item) => (
+          <KanbanCard
+            book={item.book as any}
+            ownerName={item.ownerName}
+            readerName={item.readerName}
+            role={item.role}
+            currentUserId={currentUserId}
+          />
+        ))}
+        {columns[status].length === 0 && (
+          <div class="kanban-empty">No books</div>
+        )}
+      </div>
+    </div>
+  ))}
+</div>
