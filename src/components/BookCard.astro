@@ -6,31 +6,217 @@ interface Props {
     author: string;
     description: string;
     isAvailable: boolean;
+    bookedByUserId?: string | null;
+    bookedByUsername?: string;
     username?: string;
   };
   isOwner?: boolean;
+  currentUserId?: string;
 }
 
-const { book, isOwner = false } = Astro.props;
+const { book, isOwner = false, currentUserId } = Astro.props;
+
+// Generate a consistent color from the book title
+const colors = ['#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#EF4444', '#6366F1', '#14B8A6'];
+const hash = book.title.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+const coverColor = colors[hash % colors.length];
+const initials = book.title.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+
+const isBooked = !!book.bookedByUserId;
+const isBookedByMe = currentUserId ? book.bookedByUserId === currentUserId : false;
+const canBook = currentUserId && !isOwner && book.isAvailable && !isBooked;
+const canUnbook = isBookedByMe;
 ---
-<div class="book-card" id={`book-${book.id}`}>
-  <h3>{book.title}</h3>
-  <p><strong>Author:</strong> {book.author}</p>
-  {book.description && <p>{book.description}</p>}
-  {book.username && <p><em>Shared by {book.username}</em></p>}
-  <p>Status: {book.isAvailable ? 'Available' : 'Not available'}</p>
-  {isOwner && (
-    <div class="actions">
-      <a href={`/books/edit/${book.id}`} class="btn">Edit</a>
-      <button
-        class="btn btn-danger"
-        hx-delete={`/api/books/${book.id}`}
-        hx-target={`#book-${book.id}`}
-        hx-swap="outerHTML"
-        hx-confirm="Are you sure you want to delete this book?"
-      >
-        Delete
-      </button>
+<div class="book-card" id={`book-${book.id}`} hx-get={`/partials/book-card/${book.id}`} hx-trigger="bookingChanged from:body" hx-swap="outerHTML">
+  <div class="book-cover" style={`background: ${coverColor}`}>
+    <span class="book-initials">{initials}</span>
+    {isBooked && (
+      <span class="booked-ribbon">Booked</span>
+    )}
+  </div>
+  <div class="book-info">
+    <h3><a href={`/books/${book.id}`} class="book-title-link">{book.title}</a></h3>
+    <p class="book-author">{book.author}</p>
+    {book.description && <p class="book-desc">{book.description}</p>}
+    <div class="book-meta">
+      {book.username && <span class="book-shared">by {book.username}</span>}
+      {isBooked ? (
+        <span class="badge badge-booked">Booked</span>
+      ) : book.isAvailable ? (
+        <span class="badge badge-green">Available</span>
+      ) : (
+        <span class="badge badge-gray">Unavailable</span>
+      )}
     </div>
-  )}
+    {isBooked && book.bookedByUsername && (
+      <p class="booked-by-info">
+        Booked by <strong>{book.bookedByUsername}</strong>
+      </p>
+    )}
+    {/* Owner actions: edit + delete */}
+    {isOwner && (
+      <div class="book-actions">
+        <a href={`/books/edit/${book.id}`} class="btn btn-sm">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Edit
+        </a>
+        <button
+          class="btn btn-sm btn-danger"
+          hx-delete={`/api/books/${book.id}`}
+          hx-target={`#book-${book.id}`}
+          hx-swap="outerHTML"
+          hx-confirm="Are you sure you want to delete this book?"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          Delete
+        </button>
+        {isBooked && (
+          <button
+            class="btn btn-sm"
+            hx-post={`/api/books/${book.id}/unbook`}
+            hx-swap="none"
+          >
+            Release
+          </button>
+        )}
+      </div>
+    )}
+    {/* Non-owner can book/unbook */}
+    {!isOwner && currentUserId && (
+      <div class="book-actions">
+        {canBook && (
+          <button
+            class="btn btn-sm btn-primary"
+            hx-post={`/api/books/${book.id}/book`}
+            hx-swap="none"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            Book this
+          </button>
+        )}
+        {canUnbook && (
+          <button
+            class="btn btn-sm"
+            hx-post={`/api/books/${book.id}/unbook`}
+            hx-swap="none"
+          >
+            Cancel booking
+          </button>
+        )}
+        {isBooked && !isBookedByMe && (
+          <span class="booked-notice">Someone already booked this</span>
+        )}
+      </div>
+    )}
+  </div>
 </div>
+
+<style>
+  .book-card {
+    background: #fff;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+  .book-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+  .book-cover {
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .book-initials {
+    font-size: 2rem;
+    font-weight: 800;
+    color: rgba(255,255,255,0.85);
+    letter-spacing: 0.05em;
+  }
+  .booked-ribbon {
+    position: absolute;
+    top: 10px;
+    right: -6px;
+    background: #F59E0B;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px 0 0 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .book-info {
+    padding: 1rem 1.25rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    flex: 1;
+  }
+  .book-info h3 {
+    font-size: 1.05rem;
+    margin-bottom: 0;
+  }
+  .book-title-link {
+    color: var(--gray-900);
+    text-decoration: none;
+  }
+  .book-title-link:hover {
+    color: var(--blue-600);
+  }
+  .book-author {
+    color: var(--gray-500);
+    font-size: 0.85rem;
+  }
+  .book-desc {
+    color: var(--gray-600);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .book-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .book-shared {
+    font-size: 0.8rem;
+    color: var(--gray-400);
+  }
+  .badge-booked {
+    background: #FEF3C7;
+    color: #92400E;
+  }
+  .booked-by-info {
+    font-size: 0.8rem;
+    color: var(--blue-600);
+    margin-top: 0.25rem;
+  }
+  .booked-notice {
+    font-size: 0.8rem;
+    color: var(--gray-400);
+    font-style: italic;
+  }
+  .book-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--gray-100);
+  }
+  .btn-sm {
+    font-size: 0.8rem;
+    padding: 0.3rem 0.7rem;
+  }
+</style>

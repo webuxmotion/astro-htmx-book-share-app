@@ -6,38 +6,31 @@ import { getDb } from '../../lib/db';
 const user = Astro.locals.user!;
 const db = await getDb();
 const users = db.data.users;
-const myBooks = db.data.books
-  .filter(b => b.userId === user.id)
+const bookedBooks = db.data.books
+  .filter(b => b.bookedByUserId === user.id)
   .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   .map(book => ({
     ...book,
-    bookedByUsername: book.bookedByUserId
-      ? users.find(u => u.id === book.bookedByUserId)?.username
-      : undefined,
+    username: users.find(u => u.id === book.userId)?.username ?? 'Unknown',
   }));
 ---
-<Layout title="My Books">
+<Layout title="My Bookings">
   <div class="page-header">
-    <h2 class="section-heading">My Books</h2>
-    <a href="/books/add" class="btn btn-primary">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Add a Book
-    </a>
+    <h2 class="section-heading">My Bookings</h2>
   </div>
-  <div id="my-books-list">
-    {myBooks.length === 0 ? (
+  <div id="booked-books-list">
+    {bookedBooks.length === 0 ? (
       <div class="empty-state">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="64" height="64">
-          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
         </svg>
-        <p>You haven't added any books yet.</p>
-        <a href="/books/add" class="btn btn-primary" style="margin-top: 1rem;">Add your first book</a>
+        <p>You haven't booked any books yet.</p>
+        <a href="/" class="btn btn-primary" style="margin-top: 1rem;">Browse available books</a>
       </div>
     ) : (
       <div class="book-grid">
-        {myBooks.map(book => (
-          <BookCard book={book} isOwner={true} />
+        {bookedBooks.map(book => (
+          <BookCard book={book} currentUserId={user.id} />
         ))}
       </div>
     )}

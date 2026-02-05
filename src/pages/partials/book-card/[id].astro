@@ -1,0 +1,24 @@
+---
+import BookCard from '../../../components/BookCard.astro';
+import { getDb } from '../../../lib/db';
+
+const { id } = Astro.params;
+const user = Astro.locals.user;
+const db = await getDb();
+const book = db.data.books.find(b => b.id === id);
+
+if (!book) {
+  return new Response('', { status: 404 });
+}
+
+const users = db.data.users;
+const isOwner = user?.id === book.userId;
+const bookData = {
+  ...book,
+  username: users.find(u => u.id === book.userId)?.username ?? 'Unknown',
+  bookedByUsername: book.bookedByUserId
+    ? users.find(u => u.id === book.bookedByUserId)?.username
+    : undefined,
+};
+---
+<BookCard book={bookData} isOwner={isOwner} currentUserId={user?.id} />

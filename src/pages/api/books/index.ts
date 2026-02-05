@@ -28,6 +28,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     author,
     description,
     isAvailable,
+    bookedByUserId: null,
     createdAt: new Date().toISOString(),
   };
 

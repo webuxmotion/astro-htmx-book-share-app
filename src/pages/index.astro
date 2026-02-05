@@ -12,13 +12,168 @@ const users = db.data.users;
 const booksWithUsers = books.map(book => ({
   ...book,
   username: users.find(u => u.id === book.userId)?.username ?? 'Unknown',
+  bookedByUsername: book.bookedByUserId
+    ? users.find(u => u.id === book.bookedByUserId)?.username
+    : undefined,
 }));
+
+const user = Astro.locals.user;
 ---
-<Layout title="Browse Books">
-  <h1>Available Books</h1>
-  {booksWithUsers.length === 0 ? (
-    <p class="empty">No books available yet. Be the first to share one!</p>
-  ) : (
-    <BookList books={booksWithUsers} />
-  )}
+<Layout title="Browse Books" fullWidth={true}>
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container hero-container">
+      <div class="hero-content">
+        <h1 class="hero-title">A book can change<br/>your life.</h1>
+        <p class="hero-quote">"Today a reader, tomorrow a leader."</p>
+        {user ? (
+          <a href="/books/add" class="btn btn-primary btn-lg">Share a Book</a>
+        ) : (
+          <a href="/register" class="btn btn-primary btn-lg">Get Started</a>
+        )}
+      </div>
+      <div class="hero-illustration">
+        <!-- Book shelf SVG illustration -->
+        <svg viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg" class="shelf-svg">
+          <!-- Shelf -->
+          <rect x="50" y="230" width="300" height="8" rx="2" fill="#8B6F47"/>
+          <rect x="45" y="238" width="310" height="4" rx="1" fill="#6B5335"/>
+
+          <!-- Book 1 - tall blue -->
+          <rect x="75" y="100" width="35" height="130" rx="2" fill="#3B82F6"/>
+          <rect x="78" y="105" width="29" height="3" rx="1" fill="rgba(255,255,255,0.3)"/>
+          <rect x="78" y="112" width="20" height="2" rx="1" fill="rgba(255,255,255,0.2)"/>
+          <rect x="85" y="180" width="15" height="15" rx="7.5" fill="rgba(255,255,255,0.15)"/>
+
+          <!-- Book 2 - red -->
+          <rect x="115" y="130" width="30" height="100" rx="2" fill="#EF4444"/>
+          <rect x="118" y="135" width="24" height="3" rx="1" fill="rgba(255,255,255,0.3)"/>
+          <rect x="118" y="142" width="16" height="2" rx="1" fill="rgba(255,255,255,0.2)"/>
+
+          <!-- Book 3 - green, slightly tilted -->
+          <g transform="rotate(-5, 165, 230)">
+            <rect x="150" y="120" width="30" height="110" rx="2" fill="#10B981"/>
+            <rect x="153" y="125" width="24" height="3" rx="1" fill="rgba(255,255,255,0.3)"/>
+            <rect x="153" y="132" width="18" height="2" rx="1" fill="rgba(255,255,255,0.2)"/>
+          </g>
+
+          <!-- Book 4 - purple -->
+          <rect x="183" y="140" width="35" height="90" rx="2" fill="#8B5CF6"/>
+          <rect x="186" y="145" width="29" height="3" rx="1" fill="rgba(255,255,255,0.3)"/>
+          <rect x="186" y="152" width="20" height="2" rx="1" fill="rgba(255,255,255,0.2)"/>
+
+          <!-- Book 5 - orange -->
+          <rect x="223" y="115" width="28" height="115" rx="2" fill="#F59E0B"/>
+          <rect x="226" y="120" width="22" height="3" rx="1" fill="rgba(255,255,255,0.3)"/>
+          <rect x="226" y="127" width="15" height="2" rx="1" fill="rgba(255,255,255,0.2)"/>
+
+          <!-- Book 6 - teal, open -->
+          <rect x="258" y="150" width="32" height="80" rx="2" fill="#14B8A6"/>
+          <rect x="261" y="155" width="26" height="3" rx="1" fill="rgba(255,255,255,0.3)"/>
+
+          <!-- Book 7 - indigo -->
+          <rect x="295" y="125" width="30" height="105" rx="2" fill="#6366F1"/>
+          <rect x="298" y="130" width="24" height="3" rx="1" fill="rgba(255,255,255,0.3)"/>
+          <rect x="298" y="137" width="17" height="2" rx="1" fill="rgba(255,255,255,0.2)"/>
+
+          <!-- Shelf brackets -->
+          <rect x="70" y="238" width="6" height="20" rx="1" fill="#5C4426"/>
+          <rect x="324" y="238" width="6" height="20" rx="1" fill="#5C4426"/>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- Wave Divider -->
+  <div class="wave-divider">
+    <svg viewBox="0 0 1440 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0,60 C240,100 480,0 720,50 C960,100 1200,20 1440,60 L1440,0 L0,0 Z" fill="#DBEAFE"/>
+    </svg>
+  </div>
+
+  <!-- Books Section -->
+  <section class="books-section">
+    <div class="container">
+      <h2 class="section-heading">Available Books</h2>
+      {booksWithUsers.length === 0 ? (
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="64" height="64">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+          <p>No books available yet. Be the first to share one!</p>
+          {!user && <a href="/register" class="btn btn-primary" style="margin-top: 1rem;">Sign up to share</a>}
+        </div>
+      ) : (
+        <BookList books={booksWithUsers} currentUserId={user?.id} />
+      )}
+    </div>
+  </section>
 </Layout>
+
+<style>
+  .hero {
+    background: var(--blue-100);
+    padding: 3rem 0 2rem;
+  }
+  .hero-container {
+    display: flex;
+    align-items: center;
+    gap: 3rem;
+  }
+  .hero-content {
+    flex: 1;
+  }
+  .hero-title {
+    font-size: 2.75rem;
+    font-weight: 800;
+    color: var(--gray-900);
+    line-height: 1.15;
+    margin-bottom: 1rem;
+  }
+  .hero-quote {
+    font-size: 1rem;
+    color: var(--gray-500);
+    font-style: italic;
+    margin-bottom: 1.75rem;
+  }
+  .btn-lg {
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+    border-radius: var(--radius-lg);
+  }
+  .hero-illustration {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+  }
+  .shelf-svg {
+    width: 100%;
+    max-width: 360px;
+    height: auto;
+  }
+
+  .wave-divider {
+    margin-top: -1px;
+    line-height: 0;
+  }
+  .wave-divider svg {
+    width: 100%;
+    height: 60px;
+    display: block;
+  }
+
+  .books-section {
+    padding: 2rem 0 4rem;
+  }
+
+  @media (max-width: 768px) {
+    .hero-container {
+      flex-direction: column;
+      text-align: center;
+      gap: 2rem;
+    }
+    .hero-title { font-size: 2rem; }
+    .hero-illustration { max-width: 280px; }
+  }
+</style>

@@ -21,6 +21,7 @@ export interface Book {
   author: string;
   description: string;
   isAvailable: boolean;
+  bookedByUserId: string | null;
   createdAt: string;
 }
 

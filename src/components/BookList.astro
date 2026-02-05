@@ -8,15 +8,18 @@ interface Props {
     author: string;
     description: string;
     isAvailable: boolean;
+    bookedByUserId?: string | null;
+    bookedByUsername?: string;
     username?: string;
   }>;
   isOwner?: boolean;
+  currentUserId?: string;
 }
 
-const { books, isOwner = false } = Astro.props;
+const { books, isOwner = false, currentUserId } = Astro.props;
 ---
-<div class="book-list">
+<div class="book-grid">
   {books.map(book => (
-    <BookCard book={book} isOwner={isOwner} />
+    <BookCard book={book} isOwner={isOwner} currentUserId={currentUserId} />
   ))}
 </div>

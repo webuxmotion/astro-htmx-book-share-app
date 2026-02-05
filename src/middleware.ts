@@ -2,7 +2,7 @@ import { defineMiddleware } from 'astro:middleware';
 import { validateSession } from './lib/auth';
 import { getDb } from './lib/db';
 
-const PROTECTED_ROUTES = ['/books/my', '/books/add', '/books/edit'];
+const PROTECTED_ROUTES = ['/books/my', '/books/booked', '/books/add', '/books/edit'];
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const sessionToken = context.cookies.get('session')?.value;

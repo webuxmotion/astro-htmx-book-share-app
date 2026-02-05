@@ -1,0 +1,13 @@
+---
+import { getDb } from '../../lib/db';
+
+const user = Astro.locals.user;
+let count = 0;
+if (user) {
+  const db = await getDb();
+  count = db.data.books.filter(b => b.bookedByUserId === user.id).length;
+}
+---
+<span id="booking-badge" hx-get="/partials/booking-badge" hx-trigger="bookingChanged from:body" hx-swap="outerHTML">
+  {count > 0 && <span class="nav-badge">{count}</span>}
+</span>

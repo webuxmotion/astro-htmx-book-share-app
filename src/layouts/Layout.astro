@@ -3,10 +3,19 @@ import Nav from '../components/Nav.astro';
 
 interface Props {
   title: string;
+  fullWidth?: boolean;
 }
 
-const { title } = Astro.props;
+import { getDb } from '../lib/db';
+
+const { title, fullWidth = false } = Astro.props;
 const user = Astro.locals.user;
+
+let bookingCount = 0;
+if (user) {
+  const db = await getDb();
+  bookingCount = db.data.books.filter(b => b.bookedByUserId === user.id).length;
+}
 ---
 <!DOCTYPE html>
 <html lang="en">
@@ -14,102 +23,443 @@ const user = Astro.locals.user;
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{title} | BookShare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <script src="/htmx.min.js" is:inline></script>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 1rem;
-      color: #333;
-      line-height: 1.6;
+  <style is:global>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue-50: #EFF6FF;
+      --blue-100: #DBEAFE;
+      --blue-200: #BFDBFE;
+      --blue-500: #3B82F6;
+      --blue-600: #2563EB;
+      --blue-700: #1D4ED8;
+      --gray-50: #F8FAFC;
+      --gray-100: #F1F5F9;
+      --gray-200: #E2E8F0;
+      --gray-300: #CBD5E1;
+      --gray-400: #94A3B8;
+      --gray-500: #64748B;
+      --gray-600: #475569;
+      --gray-700: #334155;
+      --gray-800: #1E293B;
+      --gray-900: #0F172A;
+      --red-500: #EF4444;
+      --red-600: #DC2626;
+      --green-500: #22C55E;
+      --green-100: #DCFCE7;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+      --shadow-lg: 0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05);
+      --radius: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
     }
-    h1 { margin-bottom: 1rem; }
-    nav {
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      color: var(--gray-800);
+      line-height: 1.6;
+      background: var(--gray-50);
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    h1, h2, h3 { line-height: 1.2; color: var(--gray-900); }
+    h1 { font-size: 2rem; font-weight: 800; }
+    h2 { font-size: 1.5rem; font-weight: 700; }
+    h3 { font-size: 1.1rem; font-weight: 600; }
+
+    a { color: var(--blue-600); text-decoration: none; }
+    a:hover { color: var(--blue-700); }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.55rem 1.25rem;
+      cursor: pointer;
+      border: 2px solid var(--gray-300);
+      background: #fff;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-decoration: none;
+      color: var(--gray-700);
+      transition: all 0.15s ease;
+      font-family: inherit;
+      line-height: 1.4;
+    }
+    .btn:hover { border-color: var(--gray-400); background: var(--gray-50); color: var(--gray-800); }
+    .btn-primary {
+      background: var(--blue-600);
+      color: #fff;
+      border-color: var(--blue-600);
+    }
+    .btn-primary:hover { background: var(--blue-700); border-color: var(--blue-700); color: #fff; }
+    .btn-danger {
+      border-color: var(--red-500);
+      color: var(--red-500);
+    }
+    .btn-danger:hover { background: #FEF2F2; border-color: var(--red-600); color: var(--red-600); }
+
+    /* Forms */
+    .form-card {
+      background: #fff;
+      border-radius: var(--radius-xl);
+      padding: 2.5rem;
+      box-shadow: var(--shadow-md);
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    .form-card h1 {
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--gray-700);
+      margin-bottom: 0.4rem;
+    }
+    .form-group label.toggle-label {
+      display: flex;
+      margin-bottom: 0;
+    }
+    .form-group input[type="text"],
+    .form-group input[type="email"],
+    .form-group input[type="password"],
+    .form-group textarea {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border: 2px solid var(--gray-200);
+      border-radius: var(--radius);
+      font-size: 0.95rem;
+      font-family: inherit;
+      color: var(--gray-800);
+      background: var(--gray-50);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--blue-500);
+      box-shadow: 0 0 0 3px var(--blue-100);
+      background: #fff;
+    }
+    .form-group textarea { resize: vertical; }
+
+    .toggle-label {
       display: flex;
       align-items: center;
       gap: 1rem;
-      padding: 1rem 0;
-      border-bottom: 1px solid #ddd;
-      margin-bottom: 1.5rem;
-      flex-wrap: wrap;
-    }
-    nav a {
-      text-decoration: none;
-      color: #555;
-    }
-    nav a:hover { color: #000; }
-    nav .nav-brand {
-      font-weight: bold;
-      color: #111;
-      margin-right: auto;
-    }
-    nav .nav-user { color: #888; font-size: 0.9rem; }
-    .book-card {
-      border: 1px solid #ddd;
-      padding: 1rem;
-      margin-bottom: 1rem;
-      border-radius: 6px;
-    }
-    .book-card h3 { margin-bottom: 0.25rem; }
-    .book-card p { margin-bottom: 0.25rem; color: #555; }
-    .book-card .actions { margin-top: 0.75rem; display: flex; gap: 0.5rem; }
-    .btn {
-      display: inline-block;
-      padding: 0.4rem 0.8rem;
       cursor: pointer;
-      border: 1px solid #333;
-      background: #fff;
-      border-radius: 4px;
-      font-size: 0.9rem;
-      text-decoration: none;
-      color: #333;
-    }
-    .btn:hover { background: #f5f5f5; }
-    .btn-danger { border-color: #c00; color: #c00; }
-    .btn-danger:hover { background: #fef0f0; }
-    .btn-primary { background: #333; color: #fff; }
-    .btn-primary:hover { background: #555; }
-    form label {
-      display: block;
-      margin-bottom: 0.5rem;
+      font-size: 0.95rem;
       font-weight: 500;
+      color: var(--gray-700);
+      padding: 0.5rem 0;
     }
-    form input[type="text"],
-    form input[type="email"],
-    form input[type="password"],
-    form textarea {
-      width: 100%;
-      padding: 0.5rem;
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      min-width: 48px;
+      height: 26px;
+      flex-shrink: 0;
+    }
+    .toggle-switch input {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: var(--gray-300);
+      border-radius: 26px;
+      transition: background 0.2s;
+      cursor: pointer;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+    .toggle-switch input:checked + .toggle-slider {
+      background: var(--blue-600);
+    }
+    .toggle-switch input:checked + .toggle-slider::before {
+      transform: translateX(22px);
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+    }
+
+    .error {
+      color: var(--red-600);
+      background: #FEF2F2;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
       margin-bottom: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+    }
+
+    /* Section headings */
+    .section-heading {
+      text-align: center;
+      text-transform: uppercase;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--gray-800);
+      margin-bottom: 2rem;
+      position: relative;
+    }
+    .section-heading::after {
+      content: '';
+      display: block;
+      width: 50px;
+      height: 3px;
+      background: var(--blue-600);
+      margin: 0.5rem auto 0;
+      border-radius: 2px;
+    }
+
+    /* Card grid */
+    .book-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--gray-400);
+    }
+    .empty-state p {
+      font-size: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    /* HTMX loading */
+    .htmx-request button[type="submit"],
+    button.htmx-request {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    /* Nav badge */
+    .nav-link-with-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .nav-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 9px;
+      background: var(--blue-600);
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    /* Badge */
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-green {
+      background: var(--green-100);
+      color: #166534;
+    }
+    .badge-gray {
+      background: var(--gray-100);
+      color: var(--gray-500);
+    }
+
+    /* Book detail */
+    .book-detail {
+      background: #fff;
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 300px 1fr;
+    }
+    .book-detail-cover {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      min-height: 360px;
+    }
+    .book-detail-initials {
+      font-size: 4rem;
+      font-weight: 800;
+      color: rgba(255,255,255,0.85);
+      letter-spacing: 0.05em;
+    }
+    .book-detail .booked-ribbon {
+      position: absolute;
+      top: 16px;
+      right: -6px;
+      background: #F59E0B;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.3rem 0.75rem;
+      border-radius: 4px 0 0 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .book-detail-content {
+      padding: 2rem 2.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .book-detail-header h1 {
+      font-size: 1.75rem;
+      margin-bottom: 0.25rem;
+    }
+    .book-detail-author {
+      color: var(--gray-500);
       font-size: 1rem;
     }
-    form textarea { resize: vertical; }
-    .checkbox-label {
+    .book-detail-status {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .book-detail-status .badge {
+      font-size: 0.85rem;
+      padding: 0.3rem 0.85rem;
+    }
+    .book-detail-status .booked-by-info {
+      font-size: 0.875rem;
+      color: var(--blue-600);
+    }
+    .book-detail-description h3 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--gray-400);
+      margin-bottom: 0.5rem;
+    }
+    .book-detail-description p {
+      color: var(--gray-700);
+      line-height: 1.7;
+      font-size: 0.95rem;
+    }
+    .book-detail-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .meta-item {
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      margin-bottom: 1rem;
-      font-weight: normal;
+      color: var(--gray-500);
+      font-size: 0.875rem;
     }
-    .checkbox-label input { width: auto; margin: 0; }
-    .error { color: #c00; margin-bottom: 1rem; }
-    .form-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
-    .empty { color: #888; font-style: italic; }
-    .htmx-request button[type="submit"],
-    button.htmx-request {
-      opacity: 0.5;
-      pointer-events: none;
+    .meta-item svg {
+      color: var(--gray-400);
+      flex-shrink: 0;
+    }
+    .book-detail-actions {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      padding-top: 1rem;
+      border-top: 1px solid var(--gray-100);
+      flex-wrap: wrap;
+    }
+    .book-detail-actions .booked-notice {
+      font-size: 0.875rem;
+      color: var(--gray-400);
+      font-style: italic;
+    }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--gray-500);
+      font-size: 0.875rem;
+      font-weight: 500;
+      margin-bottom: 1.5rem;
+    }
+    .back-link:hover {
+      color: var(--blue-600);
+    }
+
+    @media (max-width: 768px) {
+      .book-detail {
+        grid-template-columns: 1fr;
+      }
+      .book-detail-cover {
+        min-height: 200px;
+      }
+      .book-detail-content {
+        padding: 1.5rem;
+      }
+      .book-detail-header h1 {
+        font-size: 1.4rem;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .container { padding: 0 1rem; }
+      h1 { font-size: 1.5rem; }
+      .book-grid { grid-template-columns: 1fr; }
+      .form-card { padding: 1.5rem; margin: 0 0.5rem; }
     }
   </style>
 </head>
 <body>
-  <Nav user={user} />
-  <main>
+  <Nav user={user} bookingCount={bookingCount} />
+  {fullWidth ? (
     <slot />
-  </main>
+  ) : (
+    <main class="container" style="padding-top: 2rem; padding-bottom: 3rem;">
+      <slot />
+    </main>
+  )}
 </body>
 </html>
