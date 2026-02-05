@@ -1,0 +1,18 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import BookForm from '../../../components/BookForm.astro';
+import { getDb } from '../../../lib/db';
+
+const user = Astro.locals.user!;
+const { id } = Astro.params;
+const db = await getDb();
+const book = db.data.books.find(b => b.id === id);
+
+if (!book || book.userId !== user.id) {
+  return Astro.redirect('/books/my');
+}
+---
+<Layout title="Edit Book">
+  <h1>Edit Book</h1>
+  <BookForm action={`/api/books/${id}`} method="put" book={book} />
+</Layout>

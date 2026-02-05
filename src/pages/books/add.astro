@@ -1,0 +1,8 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import BookForm from '../../components/BookForm.astro';
+---
+<Layout title="Add Book">
+  <h1>Add a New Book</h1>
+  <BookForm action="/api/books" method="post" />
+</Layout>

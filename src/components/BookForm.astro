@@ -1,0 +1,47 @@
+---
+interface Props {
+  action: string;
+  method: 'post' | 'put';
+  book?: {
+    title: string;
+    author: string;
+    description: string;
+    isAvailable: boolean;
+  };
+}
+
+const { action, method, book } = Astro.props;
+---
+<div id="form-error"></div>
+<form
+  {...(method === 'post' ? { 'hx-post': action } : { 'hx-put': action })}
+  hx-target="#form-error"
+  hx-swap="innerHTML"
+>
+  <label>
+    Title
+    <input type="text" name="title" value={book?.title ?? ''} required />
+  </label>
+  <label>
+    Author
+    <input type="text" name="author" value={book?.author ?? ''} required />
+  </label>
+  <label>
+    Description
+    <textarea name="description" rows="4">{book?.description ?? ''}</textarea>
+  </label>
+  <label class="checkbox-label">
+    <input
+      type="checkbox"
+      name="isAvailable"
+      checked={book?.isAvailable ?? true}
+    />
+    Available for sharing
+  </label>
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">
+      {method === 'post' ? 'Add Book' : 'Save Changes'}
+    </button>
+    <a href="/books/my" class="btn">Cancel</a>
+  </div>
+</form>

@@ -1,0 +1,25 @@
+{
+  "name": "astro-htmx-temp",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/node": "^9.5.2",
+    "astro": "^5.17.1",
+    "bcryptjs": "^3.0.3",
+    "htmx.org": "^2.0.8",
+    "lowdb": "^7.0.1",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.6",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/uuid": "^10.0.0",
+    "typescript": "^5.9.3"
+  }
+}

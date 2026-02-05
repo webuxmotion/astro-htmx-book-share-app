@@ -1,0 +1,22 @@
+---
+import BookCard from './BookCard.astro';
+
+interface Props {
+  books: Array<{
+    id: string;
+    title: string;
+    author: string;
+    description: string;
+    isAvailable: boolean;
+    username?: string;
+  }>;
+  isOwner?: boolean;
+}
+
+const { books, isOwner = false } = Astro.props;
+---
+<div class="book-list">
+  {books.map(book => (
+    <BookCard book={book} isOwner={isOwner} />
+  ))}
+</div>

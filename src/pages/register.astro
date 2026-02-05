@@ -1,0 +1,27 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+if (Astro.locals.user) {
+  return Astro.redirect('/');
+}
+---
+<Layout title="Register">
+  <h1>Register</h1>
+  <div id="register-error"></div>
+  <form hx-post="/api/auth/register" hx-target="#register-error" hx-swap="innerHTML">
+    <label>
+      Username
+      <input type="text" name="username" required />
+    </label>
+    <label>
+      Email
+      <input type="email" name="email" required />
+    </label>
+    <label>
+      Password
+      <input type="password" name="password" required minlength="6" />
+    </label>
+    <button type="submit" class="btn btn-primary">Register</button>
+  </form>
+  <p style="margin-top: 1rem;">Already have an account? <a href="/login">Login</a></p>
+</Layout>

@@ -1,0 +1,33 @@
+---
+interface Props {
+  user?: {
+    id: string;
+    username: string;
+    email: string;
+  };
+}
+
+const { user } = Astro.props;
+---
+<nav>
+  <a href="/" class="nav-brand">BookShare</a>
+  {user ? (
+    <>
+      <a href="/books/my">My Books</a>
+      <a href="/books/add">Add Book</a>
+      <span class="nav-user">{user.username}</span>
+      <button
+        class="btn"
+        hx-post="/api/auth/logout"
+        hx-swap="none"
+      >
+        Logout
+      </button>
+    </>
+  ) : (
+    <>
+      <a href="/login">Login</a>
+      <a href="/register">Register</a>
+    </>
+  )}
+</nav>

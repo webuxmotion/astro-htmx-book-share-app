@@ -1,0 +1,115 @@
+---
+import Nav from '../components/Nav.astro';
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+const user = Astro.locals.user;
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title} | BookShare</title>
+  <script src="/htmx.min.js" is:inline></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 1rem;
+      color: #333;
+      line-height: 1.6;
+    }
+    h1 { margin-bottom: 1rem; }
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem 0;
+      border-bottom: 1px solid #ddd;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    nav a {
+      text-decoration: none;
+      color: #555;
+    }
+    nav a:hover { color: #000; }
+    nav .nav-brand {
+      font-weight: bold;
+      color: #111;
+      margin-right: auto;
+    }
+    nav .nav-user { color: #888; font-size: 0.9rem; }
+    .book-card {
+      border: 1px solid #ddd;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 6px;
+    }
+    .book-card h3 { margin-bottom: 0.25rem; }
+    .book-card p { margin-bottom: 0.25rem; color: #555; }
+    .book-card .actions { margin-top: 0.75rem; display: flex; gap: 0.5rem; }
+    .btn {
+      display: inline-block;
+      padding: 0.4rem 0.8rem;
+      cursor: pointer;
+      border: 1px solid #333;
+      background: #fff;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      text-decoration: none;
+      color: #333;
+    }
+    .btn:hover { background: #f5f5f5; }
+    .btn-danger { border-color: #c00; color: #c00; }
+    .btn-danger:hover { background: #fef0f0; }
+    .btn-primary { background: #333; color: #fff; }
+    .btn-primary:hover { background: #555; }
+    form label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+    form input[type="text"],
+    form input[type="email"],
+    form input[type="password"],
+    form textarea {
+      width: 100%;
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    form textarea { resize: vertical; }
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      font-weight: normal;
+    }
+    .checkbox-label input { width: auto; margin: 0; }
+    .error { color: #c00; margin-bottom: 1rem; }
+    .form-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+    .empty { color: #888; font-style: italic; }
+    .htmx-request button[type="submit"],
+    button.htmx-request {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <Nav user={user} />
+  <main>
+    <slot />
+  </main>
+</body>
+</html>

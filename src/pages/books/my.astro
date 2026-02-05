@@ -1,0 +1,24 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import BookCard from '../../components/BookCard.astro';
+import { getDb } from '../../lib/db';
+
+const user = Astro.locals.user!;
+const db = await getDb();
+const myBooks = db.data.books
+  .filter(b => b.userId === user.id)
+  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+---
+<Layout title="My Books">
+  <h1>My Books</h1>
+  <a href="/books/add" class="btn btn-primary" style="margin-bottom: 1rem; display: inline-block;">Add a Book</a>
+  <div id="my-books-list">
+    {myBooks.length === 0 ? (
+      <p class="empty">You haven't added any books yet.</p>
+    ) : (
+      myBooks.map(book => (
+        <BookCard book={book} isOwner={true} />
+      ))
+    )}
+  </div>
+</Layout>

@@ -1,0 +1,36 @@
+---
+interface Props {
+  book: {
+    id: string;
+    title: string;
+    author: string;
+    description: string;
+    isAvailable: boolean;
+    username?: string;
+  };
+  isOwner?: boolean;
+}
+
+const { book, isOwner = false } = Astro.props;
+---
+<div class="book-card" id={`book-${book.id}`}>
+  <h3>{book.title}</h3>
+  <p><strong>Author:</strong> {book.author}</p>
+  {book.description && <p>{book.description}</p>}
+  {book.username && <p><em>Shared by {book.username}</em></p>}
+  <p>Status: {book.isAvailable ? 'Available' : 'Not available'}</p>
+  {isOwner && (
+    <div class="actions">
+      <a href={`/books/edit/${book.id}`} class="btn">Edit</a>
+      <button
+        class="btn btn-danger"
+        hx-delete={`/api/books/${book.id}`}
+        hx-target={`#book-${book.id}`}
+        hx-swap="outerHTML"
+        hx-confirm="Are you sure you want to delete this book?"
+      >
+        Delete
+      </button>
+    </div>
+  )}
+</div>

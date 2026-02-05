@@ -1,0 +1,24 @@
+---
+import Layout from '../layouts/Layout.astro';
+import BookList from '../components/BookList.astro';
+import { getDb } from '../lib/db';
+
+const db = await getDb();
+const books = db.data.books
+  .filter(b => b.isAvailable)
+  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+const users = db.data.users;
+const booksWithUsers = books.map(book => ({
+  ...book,
+  username: users.find(u => u.id === book.userId)?.username ?? 'Unknown',
+}));
+---
+<Layout title="Browse Books">
+  <h1>Available Books</h1>
+  {booksWithUsers.length === 0 ? (
+    <p class="empty">No books available yet. Be the first to share one!</p>
+  ) : (
+    <BookList books={booksWithUsers} />
+  )}
+</Layout>
